@@ -2,15 +2,13 @@ name: Automated Commit
 
 on:
   push:
-    branches: [master]  # Chạy khi có push vào nhánh master
-
+    branches: [master]
   schedule:
-    - cron: '0 */12 * * *'  # Chạy mỗi 12 giờ một lần
-
-  workflow_dispatch:  # Cho phép chạy thủ công
+    - cron: '0 */12 * * *'
+  workflow_dispatch:
 
 permissions:
-  contents: write  # Cho phép ghi vào repo
+  contents: write
 
 jobs:
   update_commit:
@@ -20,7 +18,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          persist-credentials: true
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Update Timestamp File
@@ -30,15 +28,22 @@ jobs:
 
       - name: Setup Git Configuration
         run: |
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
-          git config user.name "${{ github.actor }}"
+          if [ $((RANDOM % 2)) -eq 0 ]; then
+            echo "➡ Commit với github-actions[bot]"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          else
+            echo "➡ Commit với user actor: ${{ github.actor }}"
+            git config user.name "${{ github.actor }}"
+            git config user.email "${{ github.actor }}@users.noreply.github.com"
+          fi
 
       - name: Prepare Commit
         run: |
           commit_messages=("Update: ⏰" "Refresh: 🔄" "Renew: 🌟" "Revise: 📝" "Amend: 🛠" "Adjust: 🔧" "Change: 📈" "Modify: 🖊" "Transform: 🌀" "Revamp: 🌈")
           random_msg=${commit_messages[$RANDOM % ${#commit_messages[@]}]}
           git add TIMESTAMP.txt
-          git commit -m "$random_msg - $current_time" || echo "No changes to commit."
+          git commit -m "$random_msg - $(date '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit."
 
       - name: GitHub Push
         run: git push
